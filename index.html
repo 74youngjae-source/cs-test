@@ -2,654 +2,404 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CS 문의 관리 & 자동답변 도구</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CS 문의 관리 - Google Sheets 연동</title>
   <style>
-    :root{
-      --bg:#f5f7fb;--card:#fff;--text:#1f2328;--muted:#667085;--border:#e4e7ec;
-      --accent:#2563eb;--accent2:#1d4ed8;--good:#15803d;--bad:#dc2626;--warn:#b45309;
-      --soft:#eff6ff;--shadow:0 10px 28px rgba(31,35,40,.08);
-    }
-    *{box-sizing:border-box}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
+    :root{--bg:#f5f7fb;--card:#fff;--text:#1f2328;--muted:#667085;--border:#e4e7ec;--accent:#2563eb;--accent2:#1d4ed8;--good:#15803d;--bad:#dc2626;--warn:#b45309;--shadow:0 10px 28px rgba(31,35,40,.08)}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.5}
     .wrap{max-width:1280px;margin:0 auto;padding:26px 18px 48px}
     header{display:flex;gap:14px;justify-content:space-between;align-items:flex-start;margin-bottom:18px}
-    h1{font-size:28px;margin:0 0 6px;letter-spacing:-.03em}
-    h2{font-size:18px;margin:0 0 12px;letter-spacing:-.02em}
-    h3{font-size:15px;margin:0 0 8px}
-    p{margin:0}
-    .sub{color:var(--muted);font-size:14px}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
-    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-    .tab{border:1px solid var(--border);background:#fff;color:#344054;border-radius:999px;padding:9px 13px;font-weight:800;cursor:pointer}
-    .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
-    .grid{display:grid;gap:16px}
-    @media(min-width:900px){.grid.two{grid-template-columns:.95fr 1.05fr}.grid.three{grid-template-columns:repeat(3,1fr)}}
-    textarea,input,select{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 12px;background:#fff;font:inherit}
-    textarea{min-height:230px;resize:vertical}
-    label{display:block;font-weight:800;margin-bottom:7px;font-size:13px}
-    .hint,.small{color:var(--muted);font-size:12px}
-    .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    button{border:0;border-radius:12px;background:var(--accent);color:#fff;padding:10px 13px;font-weight:900;cursor:pointer;font-size:13px}
-    button:hover{background:var(--accent2)}
-    button.secondary{background:#eef2ff;color:#1e3a8a}
-    button.secondary:hover{background:#dbeafe}
-    button.ghost{background:#f2f4f7;color:#344054}
-    button.ghost:hover{background:#e4e7ec}
-    button.danger{background:#fee2e2;color:#991b1b}
-    button.danger:hover{background:#fecaca}
-    .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    @media(min-width:720px){.kpis{grid-template-columns:repeat(5,minmax(0,1fr))}}
-    .kpi{border:1px solid var(--border);border-radius:16px;padding:13px;background:#fbfcff}
-    .num{font-size:25px;font-weight:950;letter-spacing:-.03em}
-    .name{font-size:12px;color:var(--muted)}
-    .status{padding:10px 12px;border-radius:14px;font-weight:800;font-size:13px;border:1px solid var(--border)}
-    .status.good{background:#ecfdf3;color:#166534;border-color:#bbf7d0}
-    .status.bad{background:#fef2f2;color:#991b1b;border-color:#fecaca}
-    .status.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
-    .tablewrap{overflow:auto;border:1px solid var(--border);border-radius:14px;background:#fff}
-    table{width:100%;border-collapse:collapse;min-width:1080px}
-    th,td{border-bottom:1px solid var(--border);padding:10px 11px;text-align:left;vertical-align:top;font-size:13px}
-    th{background:#f8fafc;color:#475467;font-size:12px;position:sticky;top:0;z-index:1}
-    tr:last-child td{border-bottom:0}
-    .pill{display:inline-block;border-radius:999px;padding:4px 8px;background:#eef2ff;color:#1e3a8a;font-weight:900;font-size:12px;white-space:nowrap}
-    .priority-높음{background:#fee2e2;color:#991b1b}.priority-중간{background:#ffedd5;color:#9a3412}.priority-낮음{background:#dcfce7;color:#166534}
-    .reply{white-space:pre-wrap;max-width:420px}
-    .hide{display:none!important}
-    .topline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
-    .filters{display:grid;gap:8px;grid-template-columns:1fr}
-    @media(min-width:760px){.filters{grid-template-columns:1.3fr .7fr .7fr .7fr}}
-    .rulebox{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;background:#fff}
-    .rulegrid{display:grid;gap:10px}
-    @media(min-width:900px){.rulegrid{grid-template-columns:.7fr 1.3fr}}
-    .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#111827;color:#fff;border-radius:999px;padding:10px 14px;font-weight:800;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:999}
-    .toast.show{opacity:1}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;font-size:12px}
-    .section{display:none}.section.active{display:block}
-    .empty{text-align:center;color:var(--muted);padding:18px}
-    .dangerText{color:#b91c1c}
-    .okText{color:#166534}
-    .warnText{color:#92400e}
+    h1{font-size:28px;margin:0 0 6px;letter-spacing:-.03em} h2{font-size:18px;margin:0 0 12px;letter-spacing:-.02em} h3{font-size:15px;margin:0 0 8px}
+    p{margin:0}.sub,.hint,.small{color:var(--muted);font-size:13px}.hint{margin-top:7px}.card{background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:18px;margin-bottom:16px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.tab{border:1px solid var(--border);background:#fff;color:#344054;border-radius:999px;padding:9px 13px;font-weight:800;cursor:pointer}.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+    .grid{display:grid;gap:16px}@media(min-width:900px){.grid.two{grid-template-columns:.95fr 1.05fr}.grid.three{grid-template-columns:repeat(3,1fr)}}
+    textarea,input,select{width:100%;border:1px solid var(--border);border-radius:12px;padding:11px 12px;background:#fff;font:inherit}textarea{min-height:220px;resize:vertical}label{display:block;font-weight:800;margin-bottom:7px;font-size:13px}
+    .btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}button{border:0;border-radius:12px;background:var(--accent);color:#fff;padding:10px 13px;font-weight:900;cursor:pointer;font-size:13px}button:hover{background:var(--accent2)}button.secondary{background:#eef2ff;color:#1e3a8a}button.secondary:hover{background:#dbeafe}button.ghost{background:#f2f4f7;color:#344054}button.ghost:hover{background:#e4e7ec}button.danger{background:#fee2e2;color:#991b1b}button.danger:hover{background:#fecaca}
+    .status{padding:10px 12px;border-radius:14px;font-weight:900;font-size:13px;border:1px solid var(--border);white-space:nowrap}.status.good{background:#ecfdf3;color:#166534;border-color:#bbf7d0}.status.bad{background:#fef2f2;color:#991b1b;border-color:#fecaca}.status.warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+    .kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}@media(min-width:760px){.kpis{grid-template-columns:repeat(5,minmax(0,1fr))}}.kpi{border:1px solid var(--border);border-radius:16px;padding:13px;background:#fbfcff}.num{font-size:25px;font-weight:950}.name{font-size:12px;color:var(--muted)}
+    .tablewrap{overflow:auto;border:1px solid var(--border);border-radius:14px;background:#fff}table{width:100%;border-collapse:collapse;min-width:1120px}th,td{border-bottom:1px solid var(--border);padding:10px 11px;text-align:left;vertical-align:top;font-size:13px}th{background:#f8fafc;color:#475467;font-size:12px;position:sticky;top:0;z-index:1}tr:last-child td{border-bottom:0}
+    .pill{display:inline-block;border-radius:999px;padding:4px 8px;background:#eef2ff;color:#1e3a8a;font-weight:900;font-size:12px;white-space:nowrap}.priority-높음{background:#fee2e2;color:#991b1b}.priority-중간{background:#ffedd5;color:#9a3412}.priority-낮음{background:#dcfce7;color:#166534}.reply{white-space:pre-wrap;max-width:430px}.section{display:none}.section.active{display:block}.empty{text-align:center;color:var(--muted);padding:18px}.topline{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}.filters{display:grid;gap:8px;grid-template-columns:1fr}@media(min-width:760px){.filters{grid-template-columns:1.3fr .7fr .7fr .7fr}}.rulebox{border:1px solid var(--border);border-radius:16px;padding:14px;margin-bottom:12px;background:#fff}.rulegrid{display:grid;gap:10px}@media(min-width:900px){.rulegrid{grid-template-columns:.7fr 1.3fr}}.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#111827;color:#fff;border-radius:999px;padding:10px 14px;font-weight:800;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:999}.toast.show{opacity:1}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px}.okText{color:#166534}.dangerText{color:#b91c1c}.warnText{color:#92400e}.configline{display:grid;gap:10px}@media(min-width:900px){.configline{grid-template-columns:1.5fr .7fr}}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div>
-        <h1>CS 문의 관리 & 자동답변 도구</h1>
-        <p class="sub">문의 입력 → 자동 분류 → 답변 초안 생성 → 처리상태 관리 → CSV 백업까지 한 파일에서 사용합니다.</p>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>CS 문의 관리 - Google Sheets 연동</h1>
+      <p class="sub">여러 사람이 같은 링크를 써도 Google Sheets에 문의가 함께 저장되고, 서로 저장한 문의를 불러올 수 있습니다.</p>
+    </div>
+    <div id="connStatus" class="status warn">연동 설정 필요</div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" onclick="showTab('setup')">연동 설정</button>
+    <button class="tab" onclick="showTab('input')">문의 입력</button>
+    <button class="tab" onclick="showTab('shared')">공유 문의 관리</button>
+    <button class="tab" onclick="showTab('rules')">분류/답변 수정</button>
+    <button class="tab" onclick="showTab('tests')">자가 테스트</button>
+  </nav>
+
+  <section id="setup" class="section active">
+    <div class="card">
+      <h2>Google Sheets 연동 설정</h2>
+      <div class="configline">
+        <div>
+          <label>Apps Script 웹 앱 URL</label>
+          <input id="apiUrl" placeholder="https://script.google.com/macros/s/....../exec">
+        </div>
+        <div>
+          <label>공유 비밀번호</label>
+          <input id="apiKey" type="password" placeholder="Apps Script SERVER_SECRET와 동일하게 입력">
+        </div>
       </div>
-      <div id="dailyStatus" class="status warn">자가 테스트 확인 중</div>
-    </header>
+      <div class="btns">
+        <button onclick="saveConfig()">설정 저장</button>
+        <button class="secondary" onclick="testConnection()">연결 테스트</button>
+        <button class="ghost" onclick="loadSharedRows()">공유 문의 새로고침</button>
+      </div>
+      <p class="hint">비밀번호는 이 브라우저에만 저장됩니다. 단, GitHub 저장소에 비밀번호를 코드로 직접 넣지는 마세요.</p>
+    </div>
 
-    <nav class="tabs">
-      <button class="tab active" onclick="showTab('dashboard')">대시보드</button>
-      <button class="tab" onclick="showTab('input')">문의 입력</button>
-      <button class="tab" onclick="showTab('history')">문의 관리</button>
-      <button class="tab" onclick="showTab('rules')">분류/답변 수정</button>
-      <button class="tab" onclick="showTab('tests')">자가 테스트/백업</button>
-    </nav>
+    <div class="card">
+      <h2>현재 공유 문의 현황</h2>
+      <div class="kpis">
+        <div class="kpi"><div class="num" id="kTotal">0</div><div class="name">전체 문의</div></div>
+        <div class="kpi"><div class="num" id="kTodo">0</div><div class="name">미처리</div></div>
+        <div class="kpi"><div class="num" id="kProgress">0</div><div class="name">처리중</div></div>
+        <div class="kpi"><div class="num" id="kDone">0</div><div class="name">완료</div></div>
+        <div class="kpi"><div class="num" id="kUrgent">0</div><div class="name">높은 우선순위</div></div>
+      </div>
+    </div>
+  </section>
 
-    <section id="dashboard" class="section active">
+  <section id="input" class="section">
+    <div class="grid two">
       <div class="card">
-        <div class="topline">
-          <div>
-            <h2>오늘 운영 현황</h2>
-            <p class="sub">브라우저에 저장된 문의 기준입니다. 같은 PC/브라우저에서 이어서 볼 수 있습니다.</p>
-          </div>
-          <div class="btns" style="margin-top:0">
-            <button class="secondary" onclick="runTests(true)">자가 테스트 실행</button>
-            <button class="secondary" onclick="exportCSV()">CSV 다운로드</button>
-          </div>
-        </div>
-        <div class="kpis" style="margin-top:14px">
-          <div class="kpi"><div class="num" id="kTotal">0</div><div class="name">전체 문의</div></div>
-          <div class="kpi"><div class="num" id="kTodo">0</div><div class="name">미처리</div></div>
-          <div class="kpi"><div class="num" id="kProgress">0</div><div class="name">처리중</div></div>
-          <div class="kpi"><div class="num" id="kDone">0</div><div class="name">완료</div></div>
-          <div class="kpi"><div class="num" id="kUrgent">0</div><div class="name">높은 우선순위</div></div>
-        </div>
-      </div>
-
-      <div class="grid two">
-        <div class="card">
-          <h2>가장 많은 문의 유형</h2>
-          <div id="categorySummary" class="small">아직 데이터가 없습니다.</div>
-        </div>
-        <div class="card">
-          <h2>오늘 자가 테스트 로그</h2>
-          <div id="testSummary" class="small">아직 테스트 로그가 없습니다.</div>
-        </div>
-      </div>
-    </section>
-
-    <section id="input" class="section">
-      <div class="grid two">
-        <div class="card">
-          <h2>문의 넣기</h2>
-          <label for="bulkText">문의 내용을 한 줄에 하나씩 입력</label>
-          <textarea id="bulkText" placeholder="예)
-배송 언제 출고되나요? 주문번호 1234입니다.
+        <h2>문의 넣기</h2>
+        <label for="bulkText">문의 내용을 한 줄에 하나씩 입력</label>
+        <textarea id="bulkText" placeholder="배송 언제 출고되나요? 주문번호 1234입니다.
 상품 불량이라 교환 가능할까요?
 샘플 키트 신청하고 싶습니다."></textarea>
-          <p class="hint">채널톡/메일/엑셀에서 복사한 내용도 줄 단위로 붙여넣으면 됩니다.</p>
-          <div class="btns">
-            <button onclick="analyzePreview()">미리 분류</button>
-            <button class="secondary" onclick="savePreview()">문의 저장</button>
-            <button class="secondary" onclick="loadSample()">예시 입력</button>
-            <button class="ghost" onclick="document.getElementById('bulkText').value='';preview=[];renderPreview()">초기화</button>
-          </div>
-        </div>
-        <div class="card">
-          <h2>미리보기</h2>
-          <div class="tablewrap">
-            <table style="min-width:740px">
-              <thead><tr><th>No</th><th>문의</th><th>유형</th><th>우선순위</th><th>답변 초안</th></tr></thead>
-              <tbody id="previewBody"><tr><td colspan="5" class="empty">미리 분류 결과가 없습니다.</td></tr></tbody>
-            </table>
-          </div>
+        <p class="hint">저장 버튼을 누르면 Google Sheets에 저장됩니다.</p>
+        <div class="btns">
+          <button onclick="analyzePreview()">미리 분류</button>
+          <button class="secondary" onclick="saveToSheet()">Google Sheets에 저장</button>
+          <button class="secondary" onclick="loadSample()">예시 입력</button>
+          <button class="ghost" onclick="clearInput()">초기화</button>
         </div>
       </div>
-    </section>
-
-    <section id="history" class="section">
       <div class="card">
-        <div class="topline">
-          <div>
-            <h2>문의 관리</h2>
-            <p class="sub">처리상태와 메모를 남길 수 있습니다. 수정하면 자동 저장됩니다.</p>
-          </div>
-          <div class="btns" style="margin-top:0">
-            <button class="secondary" onclick="copySelectedReplies()">표시된 답변 복사</button>
-            <button class="secondary" onclick="exportCSV()">CSV 다운로드</button>
-            <button class="danger" onclick="clearHistory()">문의 전체 삭제</button>
-          </div>
-        </div>
-        <div class="filters" style="margin:14px 0">
-          <input id="searchText" placeholder="검색어 입력" oninput="renderHistory()" />
-          <select id="filterCategory" onchange="renderHistory()"></select>
-          <select id="filterStatus" onchange="renderHistory()">
-            <option value="">상태 전체</option><option>미처리</option><option>처리중</option><option>완료</option>
-          </select>
-          <select id="filterPriority" onchange="renderHistory()">
-            <option value="">우선순위 전체</option><option>높음</option><option>중간</option><option>낮음</option>
-          </select>
-        </div>
+        <h2>미리보기</h2>
         <div class="tablewrap">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:70px">No</th><th style="width:120px">등록일</th><th style="width:260px">문의</th>
-                <th style="width:120px">유형</th><th style="width:100px">우선순위</th><th style="width:110px">상태</th>
-                <th>답변 초안</th><th style="width:180px">메모</th><th style="width:80px">삭제</th>
-              </tr>
-            </thead>
-            <tbody id="historyBody"><tr><td colspan="9" class="empty">저장된 문의가 없습니다.</td></tr></tbody>
+          <table style="min-width:760px">
+            <thead><tr><th>No</th><th>문의</th><th>유형</th><th>우선순위</th><th>답변 초안</th></tr></thead>
+            <tbody id="previewBody"><tr><td colspan="5" class="empty">미리 분류 결과가 없습니다.</td></tr></tbody>
           </table>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-    <section id="rules" class="section">
+  <section id="shared" class="section">
+    <div class="card">
+      <div class="topline">
+        <div>
+          <h2>공유 문의 관리</h2>
+          <p class="sub">Google Sheets에 저장된 문의입니다. 다른 사람이 저장한 문의도 여기에서 보입니다.</p>
+        </div>
+        <div class="btns" style="margin-top:0">
+          <button class="secondary" onclick="loadSharedRows()">새로고침</button>
+          <button class="secondary" onclick="copyShownReplies()">표시된 답변 복사</button>
+          <button class="secondary" onclick="exportCSV()">CSV 다운로드</button>
+        </div>
+      </div>
+      <div class="filters" style="margin:14px 0">
+        <input id="searchText" placeholder="검색어 입력" oninput="renderShared()">
+        <select id="filterCategory" onchange="renderShared()"></select>
+        <select id="filterStatus" onchange="renderShared()">
+          <option value="">상태 전체</option><option>미처리</option><option>처리중</option><option>완료</option>
+        </select>
+        <select id="filterPriority" onchange="renderShared()">
+          <option value="">우선순위 전체</option><option>높음</option><option>중간</option><option>낮음</option>
+        </select>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:65px">No</th><th style="width:130px">등록일</th><th style="width:270px">문의</th>
+              <th style="width:120px">유형</th><th style="width:100px">우선순위</th><th style="width:110px">상태</th>
+              <th>답변 초안</th><th style="width:190px">메모</th><th style="width:80px">삭제</th>
+            </tr>
+          </thead>
+          <tbody id="sharedBody"><tr><td colspan="9" class="empty">공유 문의를 불러오세요.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="rules" class="section">
+    <div class="card">
+      <div class="topline">
+        <div>
+          <h2>분류 기준 / 답변 템플릿 수정</h2>
+          <p class="sub">이 설정은 현재 브라우저에 저장됩니다. 저장 후 새 문의부터 적용됩니다.</p>
+        </div>
+        <div class="btns" style="margin-top:0">
+          <button onclick="addRule()">분류 추가</button>
+          <button class="secondary" onclick="saveRulesFromUI()">수정 저장</button>
+          <button class="danger" onclick="resetRules()">기본값 복구</button>
+        </div>
+      </div>
+      <div id="rulesArea" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <section id="tests" class="section">
+    <div class="grid two">
       <div class="card">
-        <div class="topline">
-          <div>
-            <h2>분류 기준 / 답변 템플릿 수정</h2>
-            <p class="sub">키워드와 답변을 바꾸면 앞으로 입력하는 문의에 바로 적용됩니다.</p>
-          </div>
-          <div class="btns" style="margin-top:0">
-            <button onclick="addRule()">분류 추가</button>
-            <button class="secondary" onclick="saveRulesFromUI()">수정 저장</button>
-            <button class="danger" onclick="resetRules()">기본값 복구</button>
-          </div>
+        <h2>자가 테스트</h2>
+        <p class="sub">현재 분류 규칙이 기본 문의를 제대로 분류하는지 확인합니다.</p>
+        <div class="btns">
+          <button onclick="runTests(true)">분류 테스트</button>
+          <button class="secondary" onclick="testConnection()">Google Sheets 연결 테스트</button>
         </div>
-        <div id="rulesArea" style="margin-top:14px"></div>
+        <div id="testDetails" class="small" style="margin-top:14px">아직 테스트 결과가 없습니다.</div>
       </div>
-    </section>
-
-    <section id="tests" class="section">
-      <div class="grid two">
-        <div class="card">
-          <h2>자가 테스트</h2>
-          <p class="sub">프로그램이 주요 문의를 제대로 분류하는지 확인합니다. 파일을 열 때 하루 1번 자동 실행됩니다.</p>
-          <div class="btns">
-            <button onclick="runTests(true)">지금 테스트하기</button>
-            <button class="secondary" onclick="copyTestLog()">테스트 로그 복사</button>
-          </div>
-          <div id="testDetails" class="small" style="margin-top:14px">아직 테스트 결과가 없습니다.</div>
-        </div>
-        <div class="card">
-          <h2>백업 / 복구</h2>
-          <p class="sub">문의 내역과 분류 기준을 JSON 파일로 백업할 수 있습니다.</p>
-          <div class="btns">
-            <button class="secondary" onclick="exportBackup()">전체 백업 다운로드</button>
-            <label style="display:inline-block;margin:0">
-              <input type="file" id="backupFile" accept=".json" style="display:none" onchange="importBackup(event)">
-              <span style="display:inline-block;border-radius:12px;background:#eef2ff;color:#1e3a8a;padding:10px 13px;font-weight:900;cursor:pointer;font-size:13px">백업 불러오기</span>
-            </label>
-          </div>
-          <p class="hint" style="margin-top:10px">다른 PC에서 쓰려면 백업 파일을 저장한 뒤 새 PC에서 불러오면 됩니다.</p>
+      <div class="card">
+        <h2>백업</h2>
+        <p class="sub">화면에 불러온 공유 문의를 CSV로 받을 수 있습니다. 원본 데이터는 Google Sheets에 저장됩니다.</p>
+        <div class="btns">
+          <button class="secondary" onclick="exportCSV()">CSV 다운로드</button>
         </div>
       </div>
-    </section>
-  </div>
+    </div>
+  </section>
+</div>
 
-  <div id="toast" class="toast">완료</div>
+<div id="toast" class="toast">완료</div>
 
 <script>
-const STORAGE_KEYS = {
-  rules: "csTool.rules.v2",
-  inquiries: "csTool.inquiries.v2",
-  testLog: "csTool.testLog.v2",
-  lastDailyTest: "csTool.lastDailyTest.v2"
+const STORAGE = {
+  apiUrl: "csSheets.apiUrl.v1",
+  apiKey: "csSheets.apiKey.v1",
+  rules: "csSheets.rules.v1"
 };
 
 const defaultRules = [
-  {
-    category: "배송/출고",
-    keywords: ["배송","출고","송장","택배","도착","지연","발송","언제","안왔","안 왔"],
-    action: "주문번호 확인 후 출고/배송 상태 안내",
-    auto: true,
-    reply: "안녕하세요. 배송 건 확인 도와드리겠습니다.\n주문번호 또는 수령자 정보를 남겨주시면 출고 여부와 배송 진행 상태를 확인 후 안내드리겠습니다."
-  },
-  {
-    category: "주문/결제",
-    keywords: ["주문","결제","입금","카드","주문번호","확인","결제완료","결제 완료"],
-    action: "결제 내역 및 주문 상태 확인",
-    auto: true,
-    reply: "안녕하세요. 주문 및 결제 내역 확인 도와드리겠습니다.\n주문번호 또는 결제자 정보를 남겨주시면 정상 접수 여부를 확인 후 안내드리겠습니다."
-  },
-  {
-    category: "샘플",
-    keywords: ["샘플","키트","견본","sample"],
-    action: "샘플 종류와 수령 정보 확인",
-    auto: true,
-    reply: "안녕하세요. 샘플 신청 관련 안내드립니다.\n원하시는 샘플 종류와 수령 정보를 남겨주시면 접수 가능 여부와 발송 일정을 확인 후 안내드리겠습니다."
-  },
-  {
-    category: "환불/교환",
-    keywords: ["환불","교환","반품","불량","파손","하자","오배송","취소"],
-    action: "주문 상태와 사유 확인 후 정책 기준 안내",
-    auto: false,
-    reply: "안녕하세요. 환불/교환 가능 여부 확인 도와드리겠습니다.\n주문번호와 함께 환불 또는 교환 사유를 남겨주시면 상품 상태와 진행 기준을 확인 후 안내드리겠습니다."
-  },
-  {
-    category: "상품/제작",
-    keywords: ["상품","제작","사양","옵션","가능","디자인","수량","견적","단가"],
-    action: "상품 사양, 수량, 제작 가능 여부 확인",
-    auto: true,
-    reply: "안녕하세요. 상품 및 제작 가능 여부 확인 도와드리겠습니다.\n희망하시는 상품 종류, 수량, 제작 사양을 남겨주시면 확인 후 안내드리겠습니다."
-  },
-  {
-    category: "파트너사/출고관리",
-    keywords: ["파트너","파트너사","거래처","출고 요청","재고","입고","정산"],
-    action: "파트너사명과 출고/재고 정보 확인",
-    auto: false,
-    reply: "안녕하세요. 파트너사 운영 건 확인 도와드리겠습니다.\n파트너사명과 요청 내용을 남겨주시면 출고, 재고, 일정 관련 내용을 확인 후 안내드리겠습니다."
-  }
+  {category:"배송/출고",keywords:["배송","출고","송장","택배","도착","지연","발송","언제","안왔","안 왔"],action:"주문번호 확인 후 출고/배송 상태 안내",auto:true,reply:"안녕하세요. 배송 건 확인 도와드리겠습니다.\n주문번호 또는 수령자 정보를 남겨주시면 출고 여부와 배송 진행 상태를 확인 후 안내드리겠습니다."},
+  {category:"주문/결제",keywords:["주문","결제","입금","카드","주문번호","확인","결제완료","결제 완료"],action:"결제 내역 및 주문 상태 확인",auto:true,reply:"안녕하세요. 주문 및 결제 내역 확인 도와드리겠습니다.\n주문번호 또는 결제자 정보를 남겨주시면 정상 접수 여부를 확인 후 안내드리겠습니다."},
+  {category:"샘플",keywords:["샘플","키트","견본","sample"],action:"샘플 종류와 수령 정보 확인",auto:true,reply:"안녕하세요. 샘플 신청 관련 안내드립니다.\n원하시는 샘플 종류와 수령 정보를 남겨주시면 접수 가능 여부와 발송 일정을 확인 후 안내드리겠습니다."},
+  {category:"환불/교환",keywords:["환불","교환","반품","불량","파손","하자","오배송","취소"],action:"주문 상태와 사유 확인 후 정책 기준 안내",auto:false,reply:"안녕하세요. 먼저 이용에 불편을 드려 죄송합니다.\n환불/교환 가능 여부 확인을 위해 주문번호와 상품 상태 사진을 함께 남겨주시면 확인 후 안내드리겠습니다."},
+  {category:"상품/제작",keywords:["상품","제작","사양","옵션","가능","디자인","수량","견적","단가"],action:"상품 사양, 수량, 제작 가능 여부 확인",auto:true,reply:"안녕하세요. 상품 및 제작 가능 여부 확인 도와드리겠습니다.\n희망하시는 상품 종류, 수량, 제작 사양을 남겨주시면 확인 후 안내드리겠습니다."},
+  {category:"파트너사/출고관리",keywords:["파트너","파트너사","거래처","출고 요청","재고","입고","정산"],action:"파트너사명과 출고/재고 정보 확인",auto:false,reply:"안녕하세요. 파트너사 운영 건 확인 도와드리겠습니다.\n파트너사명과 요청 내용을 남겨주시면 출고, 재고, 일정 관련 내용을 확인 후 안내드리겠습니다."}
 ];
 
 const urgentKeywords = ["불량","파손","환불","교환","오배송","취소","클레임","화남","짜증","늦","지연","안왔","안 왔","불만"];
-
 let rules = [];
-let inquiries = [];
 let preview = [];
-let lastTestResult = null;
+let sharedRows = [];
+let lastTests = null;
 
-function todayKey(){
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth()+1).padStart(2,"0");
-  const day = String(d.getDate()).padStart(2,"0");
-  return `${y}-${m}-${day}`;
-}
-function nowText(){
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
-}
-function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
-function esc(s){ return String(s ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
-function toast(msg="완료"){
-  const el=document.getElementById("toast"); el.textContent=msg; el.classList.add("show");
-  setTimeout(()=>el.classList.remove("show"),1300);
-}
-function loadJSON(key, fallback){
-  try{ return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch(e){ return fallback; }
-}
-function saveAll(){
-  localStorage.setItem(STORAGE_KEYS.rules, JSON.stringify(rules));
-  localStorage.setItem(STORAGE_KEYS.inquiries, JSON.stringify(inquiries));
-  renderAll();
-}
+function esc(s){return String(s??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}
+function toast(msg="완료"){const el=document.querySelector("#toast");el.textContent=msg;el.classList.add("show");setTimeout(()=>el.classList.remove("show"),1400)}
+function loadJSON(key, fallback){try{return JSON.parse(localStorage.getItem(key)) ?? fallback}catch(e){return fallback}}
+function getConfig(){return {url:document.querySelector("#apiUrl").value.trim(), key:document.querySelector("#apiKey").value.trim()}}
 function init(){
-  rules = loadJSON(STORAGE_KEYS.rules, defaultRules);
-  inquiries = loadJSON(STORAGE_KEYS.inquiries, []);
-  renderAll();
-  dailyAutoTest();
+  document.querySelector("#apiUrl").value = localStorage.getItem(STORAGE.apiUrl) || "";
+  document.querySelector("#apiKey").value = localStorage.getItem(STORAGE.apiKey) || "";
+  rules = loadJSON(STORAGE.rules, defaultRules);
+  renderRulesUI();
+  renderFilters();
+  runTests(false);
+  if(getConfig().url && getConfig().key){ setStatus("warn","연결 대기"); loadSharedRows(); }
 }
+function setStatus(type,msg){const el=document.querySelector("#connStatus");el.className="status "+type;el.textContent=msg}
 function showTab(id){
   document.querySelectorAll(".section").forEach(s=>s.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-  const labels = {dashboard:"대시보드", input:"문의 입력", history:"문의 관리", rules:"분류/답변 수정", tests:"자가 테스트/백업"};
-  document.querySelectorAll(".tab").forEach(t=>{ if(t.textContent===labels[id]) t.classList.add("active"); });
+  document.querySelector("#"+id).classList.add("active");
+  const labels={setup:"연동 설정",input:"문의 입력",shared:"공유 문의 관리",rules:"분류/답변 수정",tests:"자가 테스트"};
+  document.querySelectorAll(".tab").forEach(t=>{t.classList.toggle("active",t.textContent===labels[id])});
+  if(id==="shared") renderShared();
   if(id==="rules") renderRulesUI();
-  if(id==="history") renderHistory();
-  if(id==="tests") renderTestDetails();
 }
-function classify(text){
-  const lower = String(text).toLowerCase();
-  let best = null, bestScore = 0;
-  for(const rule of rules){
-    let score = 0;
-    for(const kw of rule.keywords || []){
-      const k = String(kw).trim().toLowerCase();
-      if(k && lower.includes(k)) score++;
-    }
-    if(score > bestScore){ bestScore = score; best = rule; }
-  }
-  const urgentScore = urgentKeywords.filter(k => lower.includes(k.toLowerCase())).length;
-  let priority = "낮음";
-  if(urgentScore >= 2 || ["불량","파손","오배송"].some(k=>lower.includes(k))) priority = "높음";
-  else if(urgentScore === 1 || lower.includes("지연") || lower.includes("취소")) priority = "중간";
-  if(!best){
-    best = {category:"기타", action:"상담원이 내용 확인 후 개별 답변", auto:false, reply:"안녕하세요. 문의 내용 확인 후 안내드리겠습니다.\n정확한 확인을 위해 주문번호 또는 관련 정보를 함께 남겨주시면 빠르게 확인 도와드리겠습니다."};
-  }
-  return {
-    original:text,
-    category:best.category,
-    priority,
-    action:best.action || "",
-    autoPossible: Boolean(best.auto) && priority !== "높음",
-    reply:best.reply || ""
-  };
+function saveConfig(){
+  const c=getConfig();
+  localStorage.setItem(STORAGE.apiUrl,c.url);
+  localStorage.setItem(STORAGE.apiKey,c.key);
+  toast("연동 설정 저장 완료");
 }
-function analyzePreview(){
-  const raw = document.getElementById("bulkText").value.trim();
-  preview = raw ? raw.split(/\n+/).map(x=>x.trim()).filter(Boolean).map(classify) : [];
-  renderPreview();
-  toast(`미리 분류 ${preview.length}건 완료`);
-}
-function renderPreview(){
-  const body=document.getElementById("previewBody");
-  if(!preview.length){ body.innerHTML='<tr><td colspan="5" class="empty">미리 분류 결과가 없습니다.</td></tr>'; return; }
-  body.innerHTML = preview.map((r,i)=>`<tr>
-    <td>${i+1}</td><td>${esc(r.original)}</td><td><span class="pill">${esc(r.category)}</span></td>
-    <td><span class="pill priority-${r.priority}">${r.priority}</span></td><td class="reply">${esc(r.reply)}</td>
-  </tr>`).join("");
-}
-function savePreview(){
-  if(!preview.length) analyzePreview();
-  if(!preview.length){ toast("저장할 문의가 없습니다"); return; }
-  const created = nowText();
-  const rows = preview.map(r=>({...r, id:uid(), createdAt:created, status:"미처리", memo:""}));
-  inquiries = [...rows, ...inquiries];
-  localStorage.setItem(STORAGE_KEYS.inquiries, JSON.stringify(inquiries));
-  document.getElementById("bulkText").value="";
-  preview=[];
-  renderAll();
-  toast(`${rows.length}건 저장 완료`);
-}
-function loadSample(){
-  document.getElementById("bulkText").value=[
-    "배송 언제 출고되나요? 주문번호 1234입니다.",
-    "상품 불량이라 교환 가능할까요?",
-    "샘플 키트 신청하고 싶습니다.",
-    "결제했는데 주문 확인이 안 됩니다.",
-    "파트너사 출고 일정 확인 부탁드립니다.",
-    "디자인 제작 가능 여부와 견적 문의드립니다."
-  ].join("\n");
-  analyzePreview();
-}
-function renderAll(){
-  renderDashboard();
-  renderFilters();
-  renderHistory();
-  renderRulesUI();
-  renderTestSummary();
-}
-function renderDashboard(){
-  const total=inquiries.length;
-  const todo=inquiries.filter(x=>x.status==="미처리").length;
-  const progress=inquiries.filter(x=>x.status==="처리중").length;
-  const done=inquiries.filter(x=>x.status==="완료").length;
-  const urgent=inquiries.filter(x=>x.priority==="높음").length;
-  document.getElementById("kTotal").textContent=total;
-  document.getElementById("kTodo").textContent=todo;
-  document.getElementById("kProgress").textContent=progress;
-  document.getElementById("kDone").textContent=done;
-  document.getElementById("kUrgent").textContent=urgent;
-  const counts={};
-  inquiries.forEach(x=>counts[x.category]=(counts[x.category]||0)+1);
-  const arr=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  document.getElementById("categorySummary").innerHTML = arr.length ? arr.map(([c,n])=>`<p><b>${esc(c)}</b>: ${n}건</p>`).join("") : "아직 데이터가 없습니다.";
-}
-function renderFilters(){
-  const cats = ["", ...Array.from(new Set(["기타", ...rules.map(r=>r.category), ...inquiries.map(i=>i.category)])).filter(Boolean)];
-  document.getElementById("filterCategory").innerHTML = cats.map((c,i)=>`<option value="${esc(c)}">${i===0?"유형 전체":esc(c)}</option>`).join("");
-}
-function filteredInquiries(){
-  const q=document.getElementById("searchText")?.value?.trim().toLowerCase() || "";
-  const c=document.getElementById("filterCategory")?.value || "";
-  const s=document.getElementById("filterStatus")?.value || "";
-  const p=document.getElementById("filterPriority")?.value || "";
-  return inquiries.filter(x=>{
-    const matchQ=!q || [x.original,x.category,x.reply,x.memo].some(v=>String(v||"").toLowerCase().includes(q));
-    return matchQ && (!c || x.category===c) && (!s || x.status===s) && (!p || x.priority===p);
+function jsonp(params){
+  const c=getConfig();
+  if(!c.url || !c.key) return Promise.reject(new Error("연동 URL과 비밀번호를 먼저 입력하세요."));
+  return new Promise((resolve,reject)=>{
+    const cb="cb_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+    const url = new URL(c.url);
+    Object.entries({...params,key:c.key,callback:cb}).forEach(([k,v])=>url.searchParams.set(k,v));
+    const script=document.createElement("script");
+    const timer=setTimeout(()=>{cleanup();reject(new Error("응답 시간이 초과되었습니다."))},12000);
+    function cleanup(){clearTimeout(timer);delete window[cb];script.remove()}
+    window[cb]=(data)=>{cleanup();resolve(data)};
+    script.onerror=()=>{cleanup();reject(new Error("연결 실패"))};
+    script.src=url.toString();
+    document.body.appendChild(script);
   });
 }
-function renderHistory(){
-  const body=document.getElementById("historyBody");
-  if(!body) return;
-  const rows=filteredInquiries();
-  if(!rows.length){ body.innerHTML='<tr><td colspan="9" class="empty">표시할 문의가 없습니다.</td></tr>'; return; }
-  body.innerHTML = rows.map((r,i)=>`<tr>
-    <td>${i+1}</td>
-    <td>${esc(r.createdAt)}</td>
-    <td>${esc(r.original)}</td>
-    <td><span class="pill">${esc(r.category)}</span><br><span class="small">${r.autoPossible?"자동응답 가능":"상담원 확인 권장"}</span></td>
-    <td><span class="pill priority-${r.priority}">${r.priority}</span></td>
-    <td><select onchange="updateInquiry('${r.id}','status',this.value)">
-      ${["미처리","처리중","완료"].map(s=>`<option ${r.status===s?"selected":""}>${s}</option>`).join("")}
-    </select></td>
+async function postAction(action, data={}){
+  const c=getConfig();
+  if(!c.url || !c.key) throw new Error("연동 URL과 비밀번호를 먼저 입력하세요.");
+  await fetch(c.url, {method:"POST",mode:"no-cors",body:JSON.stringify({...data,action,key:c.key})});
+  return true;
+}
+async function testConnection(){
+  saveConfig();
+  setStatus("warn","연결 테스트 중");
+  try{
+    const res=await jsonp({action:"test"});
+    if(res.ok){setStatus("good","Google Sheets 연결됨");toast("연결 성공")}
+    else{setStatus("bad","연결 실패");alert("연결 실패: "+(res.error||"알 수 없음"))}
+  }catch(err){setStatus("bad","연결 실패");alert(err.message)}
+}
+async function loadSharedRows(){
+  saveConfig();
+  setStatus("warn","불러오는 중");
+  try{
+    const res=await jsonp({action:"list"});
+    if(!res.ok) throw new Error(res.error||"불러오기 실패");
+    sharedRows=res.rows||[];
+    setStatus("good",`공유 문의 ${sharedRows.length}건`);
+    renderShared();
+    renderDashboard();
+    renderFilters();
+    toast("공유 문의 불러오기 완료");
+  }catch(err){setStatus("bad","불러오기 실패");alert(err.message)}
+}
+function classify(text){
+  const lower=String(text).toLowerCase();
+  let best=null,bestScore=0;
+  for(const rule of rules){
+    let score=0;
+    for(const kw of rule.keywords||[]){const k=String(kw).trim().toLowerCase(); if(k&&lower.includes(k)) score++}
+    if(score>bestScore){bestScore=score;best=rule}
+  }
+  const urgentScore=urgentKeywords.filter(k=>lower.includes(k.toLowerCase())).length;
+  let priority="낮음";
+  if(urgentScore>=2||["불량","파손","오배송"].some(k=>lower.includes(k))) priority="높음";
+  else if(urgentScore===1||lower.includes("지연")||lower.includes("취소")) priority="중간";
+  if(!best) best={category:"기타",action:"상담원이 내용 확인 후 개별 답변",auto:false,reply:"안녕하세요. 문의 내용 확인 후 안내드리겠습니다.\n정확한 확인을 위해 주문번호 또는 관련 정보를 함께 남겨주시면 빠르게 확인 도와드리겠습니다."};
+  return {original:text,category:best.category,priority,action:best.action||"",autoPossible:Boolean(best.auto)&&priority!=="높음",reply:best.reply||"",status:"미처리",memo:""};
+}
+function analyzePreview(){
+  const raw=document.querySelector("#bulkText").value.trim();
+  preview=raw?raw.split(/\n+/).map(x=>x.trim()).filter(Boolean).map(classify):[];
+  renderPreview();toast(`미리 분류 ${preview.length}건 완료`);
+}
+function renderPreview(){
+  const body=document.querySelector("#previewBody");
+  if(!preview.length){body.innerHTML='<tr><td colspan="5" class="empty">미리 분류 결과가 없습니다.</td></tr>';return}
+  body.innerHTML=preview.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.original)}</td><td><span class="pill">${esc(r.category)}</span></td><td><span class="pill priority-${r.priority}">${r.priority}</span></td><td class="reply">${esc(r.reply)}</td></tr>`).join("");
+}
+async function saveToSheet(){
+  if(!preview.length) analyzePreview();
+  if(!preview.length){toast("저장할 문의 없음");return}
+  try{
+    await postAction("addMany",{items:preview,source:"github-pages"});
+    toast(`${preview.length}건 저장 요청 완료`);
+    clearInput();
+    setTimeout(loadSharedRows,1600);
+  }catch(err){alert(err.message)}
+}
+function clearInput(){document.querySelector("#bulkText").value="";preview=[];renderPreview()}
+function loadSample(){document.querySelector("#bulkText").value=["배송 언제 출고되나요? 주문번호 1234입니다.","상품 불량이라 교환 가능할까요?","샘플 키트 신청하고 싶습니다.","결제했는데 주문 확인이 안 됩니다.","파트너사 출고 일정 확인 부탁드립니다.","디자인 제작 가능 여부와 견적 문의드립니다."].join("\n");analyzePreview()}
+function renderDashboard(){
+  const total=sharedRows.length,todo=sharedRows.filter(x=>x.status==="미처리").length,progress=sharedRows.filter(x=>x.status==="처리중").length,done=sharedRows.filter(x=>x.status==="완료").length,urgent=sharedRows.filter(x=>x.priority==="높음").length;
+  document.querySelector("#kTotal").textContent=total;document.querySelector("#kTodo").textContent=todo;document.querySelector("#kProgress").textContent=progress;document.querySelector("#kDone").textContent=done;document.querySelector("#kUrgent").textContent=urgent;
+}
+function renderFilters(){
+  const cats=["",...Array.from(new Set(["기타",...rules.map(r=>r.category),...sharedRows.map(r=>r.category)])).filter(Boolean)];
+  document.querySelector("#filterCategory").innerHTML=cats.map((c,i)=>`<option value="${esc(c)}">${i===0?"유형 전체":esc(c)}</option>`).join("");
+}
+function filteredRows(){
+  const q=document.querySelector("#searchText")?.value?.trim().toLowerCase()||"",c=document.querySelector("#filterCategory")?.value||"",s=document.querySelector("#filterStatus")?.value||"",p=document.querySelector("#filterPriority")?.value||"";
+  return sharedRows.filter(x=>{
+    const matchQ=!q||[x.original,x.category,x.reply,x.memo,x.status].some(v=>String(v||"").toLowerCase().includes(q));
+    return matchQ&&(!c||x.category===c)&&(!s||x.status===s)&&(!p||x.priority===p);
+  });
+}
+function renderShared(){
+  const body=document.querySelector("#sharedBody"); if(!body)return;
+  const rows=filteredRows();
+  if(!rows.length){body.innerHTML='<tr><td colspan="9" class="empty">표시할 문의가 없습니다.</td></tr>';renderDashboard();return}
+  body.innerHTML=rows.map((r,i)=>`<tr>
+    <td>${i+1}</td><td>${esc(r.createdAt)}</td><td>${esc(r.original)}</td>
+    <td><span class="pill">${esc(r.category)}</span><br><span class="small">${esc(r.autoPossible)}</span></td>
+    <td><span class="pill priority-${r.priority}">${esc(r.priority)}</span></td>
+    <td><select onchange="updateShared('${esc(r.id)}','status',this.value)">${["미처리","처리중","완료"].map(s=>`<option ${r.status===s?"selected":""}>${s}</option>`).join("")}</select></td>
     <td class="reply">${esc(r.reply)}<div class="btns"><button class="secondary" onclick="copyText(${JSON.stringify(r.reply)})">복사</button></div></td>
-    <td><textarea style="min-height:88px" onchange="updateInquiry('${r.id}','memo',this.value)" placeholder="메모">${esc(r.memo)}</textarea></td>
-    <td><button class="danger" onclick="deleteInquiry('${r.id}')">삭제</button></td>
+    <td><textarea style="min-height:88px" onchange="updateShared('${esc(r.id)}','memo',this.value)" placeholder="메모">${esc(r.memo)}</textarea></td>
+    <td><button class="danger" onclick="deleteShared('${esc(r.id)}')">삭제</button></td>
   </tr>`).join("");
-}
-function updateInquiry(id,key,value){
-  inquiries = inquiries.map(x=>x.id===id ? {...x,[key]:value} : x);
-  localStorage.setItem(STORAGE_KEYS.inquiries, JSON.stringify(inquiries));
   renderDashboard();
-  toast("저장됨");
 }
-function deleteInquiry(id){
-  if(!confirm("이 문의를 삭제할까요?")) return;
-  inquiries = inquiries.filter(x=>x.id!==id);
-  localStorage.setItem(STORAGE_KEYS.inquiries, JSON.stringify(inquiries));
-  renderAll();
-  toast("삭제 완료");
+async function updateShared(id,field,value){
+  const row=sharedRows.find(r=>String(r.id)===String(id)); if(row){row[field]=value;renderDashboard();}
+  try{
+    await postAction("update",{id,status: field==="status"?value:undefined,memo: field==="memo"?value:undefined});
+    toast("저장 요청 완료");
+    setTimeout(loadSharedRows,1200);
+  }catch(err){alert(err.message)}
 }
-function clearHistory(){
-  if(!confirm("저장된 문의를 전부 삭제할까요? 이 작업은 되돌릴 수 없습니다.")) return;
-  inquiries=[];
-  localStorage.setItem(STORAGE_KEYS.inquiries, JSON.stringify(inquiries));
-  renderAll();
-  toast("전체 삭제 완료");
+async function deleteShared(id){
+  if(!confirm("이 문의를 삭제 표시할까요? 시트에서는 상태가 '삭제됨'으로 바뀝니다.")) return;
+  try{await postAction("delete",{id});toast("삭제 요청 완료");setTimeout(loadSharedRows,1200)}catch(err){alert(err.message)}
 }
-function copyText(t){
-  navigator.clipboard.writeText(t).then(()=>toast("복사 완료")).catch(()=>alert("복사 실패"));
-}
-function copySelectedReplies(){
-  const rows=filteredInquiries();
-  if(!rows.length){ toast("복사할 내용 없음"); return; }
+function copyText(t){navigator.clipboard.writeText(t).then(()=>toast("복사 완료")).catch(()=>alert("복사 실패"))}
+function copyShownReplies(){
+  const rows=filteredRows(); if(!rows.length){toast("복사할 내용 없음");return}
   const text=rows.map((r,i)=>`[${i+1}] ${r.category} / ${r.priority}\n문의: ${r.original}\n답변:\n${r.reply}`).join("\n\n");
   copyText(text);
 }
+function exportCSV(){
+  const rows=filteredRows(); if(!rows.length){toast("다운로드할 문의 없음");return}
+  const header=["등록일","문의","유형","우선순위","상태","자동응답 가능","처리 방향","답변 초안","메모"];
+  const csv=[header,...rows.map(r=>[r.createdAt,r.original,r.category,r.priority,r.status,r.autoPossible,r.action,r.reply,r.memo])].map(row=>row.map(c=>`"${String(c??"").replaceAll('"','""')}"`).join(",")).join("\n");
+  downloadFile("\ufeff"+csv, "cs_shared_inquiries.csv", "text/csv;charset=utf-8;");
+}
+function downloadFile(content,filename,type){const blob=new Blob([content],{type});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url)}
 function renderRulesUI(){
-  const area=document.getElementById("rulesArea");
-  if(!area) return;
-  area.innerHTML = rules.map((r,i)=>`<div class="rulebox">
-    <div class="topline">
-      <h3>${i+1}. ${esc(r.category || "새 분류")}</h3>
-      <button class="danger" onclick="removeRule(${i})">삭제</button>
-    </div>
+  const area=document.querySelector("#rulesArea"); if(!area)return;
+  area.innerHTML=rules.map((r,i)=>`<div class="rulebox">
+    <div class="topline"><h3>${i+1}. ${esc(r.category||"새 분류")}</h3><button class="danger" onclick="removeRule(${i})">삭제</button></div>
     <div class="rulegrid">
-      <div>
-        <label>문의 유형명</label>
-        <input data-rule="${i}" data-field="category" value="${esc(r.category)}">
-      </div>
-      <div>
-        <label>키워드 - 쉼표로 구분</label>
-        <input data-rule="${i}" data-field="keywords" value="${esc((r.keywords||[]).join(", "))}">
-      </div>
-      <div>
-        <label>자동응답 가능 여부</label>
-        <select data-rule="${i}" data-field="auto">
-          <option value="true" ${r.auto?"selected":""}>가능</option>
-          <option value="false" ${!r.auto?"selected":""}>상담원 확인 권장</option>
-        </select>
-      </div>
-      <div>
-        <label>처리 방향</label>
-        <input data-rule="${i}" data-field="action" value="${esc(r.action)}">
-      </div>
+      <div><label>문의 유형명</label><input data-rule="${i}" data-field="category" value="${esc(r.category)}"></div>
+      <div><label>키워드 - 쉼표로 구분</label><input data-rule="${i}" data-field="keywords" value="${esc((r.keywords||[]).join(", "))}"></div>
+      <div><label>자동응답 가능 여부</label><select data-rule="${i}" data-field="auto"><option value="true" ${r.auto?"selected":""}>가능</option><option value="false" ${!r.auto?"selected":""}>상담원 확인 권장</option></select></div>
+      <div><label>처리 방향</label><input data-rule="${i}" data-field="action" value="${esc(r.action)}"></div>
     </div>
-    <div style="margin-top:10px">
-      <label>답변 템플릿</label>
-      <textarea data-rule="${i}" data-field="reply" style="min-height:120px">${esc(r.reply)}</textarea>
-    </div>
+    <div style="margin-top:10px"><label>답변 템플릿</label><textarea data-rule="${i}" data-field="reply" style="min-height:120px">${esc(r.reply)}</textarea></div>
   </div>`).join("");
 }
 function saveRulesFromUI(){
-  const next = JSON.parse(JSON.stringify(rules));
+  const next=JSON.parse(JSON.stringify(rules));
   document.querySelectorAll("[data-rule]").forEach(el=>{
-    const idx=Number(el.dataset.rule), field=el.dataset.field;
+    const idx=Number(el.dataset.rule),field=el.dataset.field;
     if(field==="keywords") next[idx][field]=el.value.split(",").map(x=>x.trim()).filter(Boolean);
     else if(field==="auto") next[idx][field]=el.value==="true";
     else next[idx][field]=el.value;
   });
   rules=next.filter(r=>r.category);
-  localStorage.setItem(STORAGE_KEYS.rules, JSON.stringify(rules));
-  renderAll();
-  runTests(false);
-  toast("분류 기준 저장 완료");
+  localStorage.setItem(STORAGE.rules,JSON.stringify(rules));
+  renderFilters();renderRulesUI();runTests(false);toast("분류 기준 저장 완료");
 }
-function addRule(){
-  rules.push({category:"새 문의 유형",keywords:["키워드"],action:"처리 방향 입력",auto:true,reply:"안녕하세요. 문의 내용 확인 후 안내드리겠습니다."});
-  renderRulesUI();
-}
-function removeRule(i){
-  if(!confirm("이 분류 기준을 삭제할까요?")) return;
-  rules.splice(i,1);
-  localStorage.setItem(STORAGE_KEYS.rules, JSON.stringify(rules));
-  renderAll();
-}
-function resetRules(){
-  if(!confirm("분류 기준과 답변 템플릿을 기본값으로 되돌릴까요?")) return;
-  rules = JSON.parse(JSON.stringify(defaultRules));
-  localStorage.setItem(STORAGE_KEYS.rules, JSON.stringify(rules));
-  renderAll();
-  runTests(true);
-  toast("기본값 복구 완료");
-}
-const testCases = [
-  {text:"배송 언제 출고되나요?", expected:"배송/출고"},
-  {text:"결제했는데 주문 확인이 안 됩니다.", expected:"주문/결제"},
-  {text:"샘플 키트 신청하고 싶습니다.", expected:"샘플"},
-  {text:"상품 불량이라 교환 가능할까요?", expected:"환불/교환"},
-  {text:"디자인 제작 견적 문의드립니다.", expected:"상품/제작"},
-  {text:"파트너사 출고 일정 확인 부탁드립니다.", expected:"파트너사/출고관리"}
-];
+function addRule(){rules.push({category:"새 문의 유형",keywords:["키워드"],action:"처리 방향 입력",auto:true,reply:"안녕하세요. 문의 내용 확인 후 안내드리겠습니다."});renderRulesUI()}
+function removeRule(i){if(!confirm("이 분류 기준을 삭제할까요?"))return;rules.splice(i,1);localStorage.setItem(STORAGE.rules,JSON.stringify(rules));renderRulesUI();renderFilters()}
+function resetRules(){if(!confirm("기본값으로 되돌릴까요?"))return;rules=JSON.parse(JSON.stringify(defaultRules));localStorage.setItem(STORAGE.rules,JSON.stringify(rules));renderRulesUI();renderFilters();runTests(true);toast("기본값 복구 완료")}
+const testCases=[{text:"배송 언제 출고되나요?",expected:"배송/출고"},{text:"결제했는데 주문 확인이 안 됩니다.",expected:"주문/결제"},{text:"샘플 키트 신청하고 싶습니다.",expected:"샘플"},{text:"상품 불량이라 교환 가능할까요?",expected:"환불/교환"},{text:"디자인 제작 견적 문의드립니다.",expected:"상품/제작"},{text:"파트너사 출고 일정 확인 부탁드립니다.",expected:"파트너사/출고관리"}];
 function runTests(showToast){
-  const results = testCases.map(t=>{
-    const got=classify(t.text).category;
-    return {...t, got, pass: got===t.expected};
-  });
-  const passCount=results.filter(r=>r.pass).length;
-  const ok=passCount===results.length;
-  lastTestResult = {date:nowText(), ok, passCount, total:results.length, results};
-  localStorage.setItem(STORAGE_KEYS.testLog, JSON.stringify(lastTestResult));
-  localStorage.setItem(STORAGE_KEYS.lastDailyTest, todayKey());
-  renderTestSummary();
-  renderTestDetails();
-  if(showToast) toast(ok ? "자가 테스트 통과" : "자가 테스트 실패");
-  return lastTestResult;
-}
-function dailyAutoTest(){
-  const last = localStorage.getItem(STORAGE_KEYS.lastDailyTest);
-  if(last !== todayKey()) runTests(false);
-  else{
-    lastTestResult = loadJSON(STORAGE_KEYS.testLog, null);
-    renderTestSummary();
-    renderTestDetails();
-  }
-}
-function renderTestSummary(){
-  const log = lastTestResult || loadJSON(STORAGE_KEYS.testLog, null);
-  const badge=document.getElementById("dailyStatus");
-  const summary=document.getElementById("testSummary");
-  if(!log){
-    badge.className="status warn"; badge.textContent="자가 테스트 미실행";
-    if(summary) summary.textContent="아직 테스트 로그가 없습니다.";
-    return;
-  }
-  badge.className = `status ${log.ok ? "good" : "bad"}`;
-  badge.textContent = log.ok ? `오늘 테스트 통과 (${log.passCount}/${log.total})` : `테스트 확인 필요 (${log.passCount}/${log.total})`;
-  if(summary){
-    summary.innerHTML = `<p><b>최근 실행:</b> ${esc(log.date)}</p><p><b>결과:</b> ${log.ok ? "<span class='okText'>통과</span>" : "<span class='dangerText'>실패</span>"} (${log.passCount}/${log.total})</p>`;
-  }
-}
-function renderTestDetails(){
-  const el=document.getElementById("testDetails");
-  if(!el) return;
-  const log = lastTestResult || loadJSON(STORAGE_KEYS.testLog, null);
-  if(!log){ el.textContent="아직 테스트 결과가 없습니다."; return; }
-  el.innerHTML = `<p><b>실행 시간:</b> ${esc(log.date)}</p><p><b>결과:</b> ${log.ok ? "<span class='okText'>전체 통과</span>" : "<span class='dangerText'>확인 필요</span>"} (${log.passCount}/${log.total})</p><br>` +
-    log.results.map((r,i)=>`<p>${i+1}. ${r.pass ? "✅" : "❌"} 문의: ${esc(r.text)}<br><span class="mono">기대값: ${esc(r.expected)} / 실제값: ${esc(r.got)}</span></p>`).join("<br>");
-}
-function copyTestLog(){
-  const log = lastTestResult || loadJSON(STORAGE_KEYS.testLog, null);
-  if(!log){ toast("복사할 로그 없음"); return; }
-  const text = `[자가 테스트] ${log.date}\n결과: ${log.ok ? "통과" : "확인 필요"} (${log.passCount}/${log.total})\n\n` +
-    log.results.map((r,i)=>`${i+1}. ${r.pass ? "PASS" : "FAIL"} | 문의: ${r.text} | 기대값: ${r.expected} | 실제값: ${r.got}`).join("\n");
-  copyText(text);
-}
-function exportCSV(){
-  if(!inquiries.length){ toast("다운로드할 문의 없음"); return; }
-  const header=["등록일","문의","유형","우선순위","상태","자동응답 가능","처리 방향","답변 초안","메모"];
-  const rows=inquiries.map(r=>[r.createdAt,r.original,r.category,r.priority,r.status,r.autoPossible?"가능":"상담원 확인 권장",r.action,r.reply,r.memo]);
-  const csv=[header,...rows].map(row=>row.map(c=>`"${String(c??"").replaceAll('"','""')}"`).join(",")).join("\n");
-  downloadFile("\ufeff"+csv, `cs_inquiries_${todayKey()}.csv`, "text/csv;charset=utf-8;");
-}
-function exportBackup(){
-  const data={version:2, exportedAt:nowText(), rules, inquiries, testLog: loadJSON(STORAGE_KEYS.testLog, null)};
-  downloadFile(JSON.stringify(data,null,2), `cs_tool_backup_${todayKey()}.json`, "application/json;charset=utf-8;");
-}
-function importBackup(e){
-  const file=e.target.files[0]; if(!file) return;
-  const reader=new FileReader();
-  reader.onload=()=>{
-    try{
-      const data=JSON.parse(reader.result);
-      if(!Array.isArray(data.rules) || !Array.isArray(data.inquiries)) throw new Error("형식 오류");
-      if(!confirm("현재 저장된 규칙과 문의 내역을 백업 파일 내용으로 교체할까요?")) return;
-      rules=data.rules; inquiries=data.inquiries;
-      localStorage.setItem(STORAGE_KEYS.rules, JSON.stringify(rules));
-      localStorage.setItem(STORAGE_KEYS.inquiries, JSON.stringify(inquiries));
-      if(data.testLog) localStorage.setItem(STORAGE_KEYS.testLog, JSON.stringify(data.testLog));
-      renderAll(); runTests(false); toast("백업 복구 완료");
-    }catch(err){ alert("백업 파일을 읽을 수 없습니다."); }
-  };
-  reader.readAsText(file, "utf-8");
-  e.target.value="";
-}
-function downloadFile(content, filename, type){
-  const blob=new Blob([content],{type});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
-  URL.revokeObjectURL(url);
+  const results=testCases.map(t=>{const got=classify(t.text).category;return {...t,got,pass:got===t.expected}});
+  const pass=results.filter(r=>r.pass).length;lastTests={pass,total:results.length,results};
+  const el=document.querySelector("#testDetails"); if(el) el.innerHTML=`<p><b>결과:</b> ${pass===results.length?"<span class='okText'>전체 통과</span>":"<span class='dangerText'>확인 필요</span>"} (${pass}/${results.length})</p><br>`+results.map((r,i)=>`<p>${i+1}. ${r.pass?"✅":"❌"} ${esc(r.text)}<br><span class="mono">기대값: ${esc(r.expected)} / 실제값: ${esc(r.got)}</span></p>`).join("<br>");
+  if(showToast) toast(pass===results.length?"분류 테스트 통과":"분류 테스트 확인 필요");
 }
 window.addEventListener("DOMContentLoaded", init);
 </script>
